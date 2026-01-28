@@ -1,4 +1,12 @@
-.react-router
-build
 node_modules
-README.md
+.git
+.gitignore
+.DS_Store
+.env
+.env.*
+build
+.react-router
+*.md
+Dockerfile
+.dockerignore
+.claude

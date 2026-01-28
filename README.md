@@ -1,87 +1,97 @@
-# Welcome to React Router!
+# BTRFS Snapshot Visualizer
 
-A modern, production-ready template for building full-stack React applications using React Router.
-
-[![Open in StackBlitz](https://developer.stackblitz.com/img/open_in_stackblitz.svg)](https://stackblitz.com/github/remix-run/react-router-templates/tree/main/default)
+A web-based tool to visualize btrfs snapshots and discover incremental changes between them.
 
 ## Features
 
-- 🚀 Server-side rendering
-- ⚡️ Hot Module Replacement (HMR)
-- 📦 Asset bundling and optimization
-- 🔄 Data loading and mutations
-- 🔒 TypeScript by default
-- 🎉 TailwindCSS for styling
-- 📖 [React Router docs](https://reactrouter.com/)
+- Browse btrfs subvolumes and their snapshots
+- Vertical timeline view of snapshots (mobile-friendly)
+- Compare any two snapshots to see file changes
+- View unified diffs for text files
+- Binary file detection (won't try to diff binaries)
+- Mock mode for development/demo without a btrfs filesystem
 
 ## Getting Started
 
 ### Installation
 
-Install the dependencies:
-
 ```bash
 npm install
 ```
 
-### Development
+### Development (Mock Mode)
 
-Start the development server with HMR:
+Run with sample data - no btrfs filesystem required:
 
 ```bash
-npm run dev
+DEMO=true npm run dev
+```
+
+### Development (Real Mode)
+
+Requires a btrfs filesystem and root privileges for btrfs commands:
+
+```bash
+sudo npm run dev
 ```
 
 Your application will be available at `http://localhost:5173`.
 
 ## Building for Production
 
-Create a production build:
-
 ```bash
 npm run build
+npm run start
 ```
 
-## Deployment
+## Docker
 
-### Docker Deployment
-
-To build and run using Docker:
+### Build
 
 ```bash
-docker build -t my-app .
-
-# Run the container
-docker run -p 3000:3000 my-app
+docker build -t btrfs-snapshot-viz .
 ```
 
-The containerized application can be deployed to any platform that supports Docker, including:
+### Run (Mock Mode)
 
-- AWS ECS
-- Google Cloud Run
-- Azure Container Apps
-- Digital Ocean App Platform
-- Fly.io
-- Railway
-
-### DIY Deployment
-
-If you're familiar with deploying Node applications, the built-in app server is production-ready.
-
-Make sure to deploy the output of `npm run build`
-
-```
-├── package.json
-├── package-lock.json (or pnpm-lock.yaml, or bun.lockb)
-├── build/
-│   ├── client/    # Static assets
-│   └── server/    # Server-side code
+```bash
+docker run -p 3000:3000 btrfs-snapshot-viz
 ```
 
-## Styling
+### Run (Real Mode)
 
-This template comes with [Tailwind CSS](https://tailwindcss.com/) already configured for a simple default starting experience. You can use whatever CSS framework you prefer.
+To use with a real btrfs filesystem, you need to:
+1. Run as privileged (for btrfs commands)
+2. Mount your btrfs filesystem into the container
 
----
+```bash
+docker run -p 3000:3000 \
+  --privileged \
+  -e DEMO=false \
+  -e BTRFS_ROOT=/mnt/btrfs \
+  -v /path/to/your/btrfs:/mnt/btrfs:ro \
+  btrfs-snapshot-viz
+```
 
-Built with ❤️ using React Router.
+## Environment Variables
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `DEMO` | `true` in Docker, `false` otherwise | Use mock data instead of real btrfs commands |
+| `BTRFS_ROOT` | `/` | Root path for btrfs subvolume commands |
+| `BTRFS_DISPLAY_PATH` | `BTRFS_ROOT` | Path shown in copy commands (e.g., `/srv/dev-disk-by-uuid-...`) |
+| `PORT` | `3000` | Server port |
+
+## How It Works
+
+1. **Snapshot Discovery**: Uses `btrfs subvolume list` to find all subvolumes and snapshots
+2. **Change Detection**: Uses `btrfs send -p <old> <new> | btrfs receive --dump` to get incremental changes between snapshots
+3. **File Diffing**: Reads files directly from snapshot paths and generates unified diffs
+
+## Tech Stack
+
+- React Router v7 (framework mode)
+- React 19
+- TypeScript
+- Tailwind CSS
+- Vite
