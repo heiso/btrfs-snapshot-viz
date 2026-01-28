@@ -1,8 +1,9 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import type { Route } from "./+types/compare";
-import { getChanges, getBtrfsDisplayPath } from "~/services/index.server";
+import { getBtrfsDisplayPath } from "~/services/index.server";
 import { ChangesView } from "~/components/ChangesView";
 import { buildBtrfsSendCommand } from "~/utils/btrfs";
+import type { FileChange } from "~/types";
 
 // Copy icon
 function CopyIcon({ className }: { className?: string }) {
@@ -22,17 +23,41 @@ function CheckIcon({ className }: { className?: string }) {
   );
 }
 
+// Loading spinner
+function LoadingSpinner({ className }: { className?: string }) {
+  return (
+    <svg
+      className={`animate-spin ${className}`}
+      xmlns="http://www.w3.org/2000/svg"
+      fill="none"
+      viewBox="0 0 24 24"
+    >
+      <circle
+        className="opacity-25"
+        cx="12"
+        cy="12"
+        r="10"
+        stroke="currentColor"
+        strokeWidth="4"
+      />
+      <path
+        className="opacity-75"
+        fill="currentColor"
+        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+      />
+    </svg>
+  );
+}
+
 // Copyable command component
 function CopyableCommand({ command, label }: { command: string; label: string }) {
   const [copied, setCopied] = useState(false);
 
   const handleCopy = async () => {
     try {
-      // Try modern clipboard API first
       if (navigator.clipboard && navigator.clipboard.writeText) {
         await navigator.clipboard.writeText(command);
       } else {
-        // Fallback for non-HTTPS contexts
         const textArea = document.createElement("textarea");
         textArea.value = command;
         textArea.style.position = "fixed";
@@ -89,30 +114,116 @@ export async function loader({ params }: Route.LoaderArgs) {
   const newSnapshotPath = decodeURIComponent(params.newSnapshot);
   const btrfsDisplayPath = getBtrfsDisplayPath();
 
-  const comparison = await getChanges(oldSnapshotPath, newSnapshotPath);
-  return { comparison, oldSnapshotPath, newSnapshotPath, btrfsDisplayPath };
+  return { oldSnapshotPath, newSnapshotPath, btrfsDisplayPath };
+}
+
+interface StreamSummary {
+  added: number;
+  modified: number;
+  deleted: number;
+  renamed: number;
 }
 
 export default function Compare({ loaderData }: Route.ComponentProps) {
-  const { comparison, oldSnapshotPath, newSnapshotPath, btrfsDisplayPath } = loaderData;
-  const { changes, summary, oldSnapshot, newSnapshot } = comparison;
+  const { oldSnapshotPath, newSnapshotPath, btrfsDisplayPath } = loaderData;
 
-  // Build the btrfs send command for copying
+  const [changes, setChanges] = useState<FileChange[]>([]);
+  const [summary, setSummary] = useState<StreamSummary>({ added: 0, modified: 0, deleted: 0, renamed: 0 });
+  const [isStreaming, setIsStreaming] = useState(true);
+  const [progress, setProgress] = useState<string>("");
+  const [error, setError] = useState<string | null>(null);
+
+  // Use refs to accumulate changes without triggering re-renders
+  const changeMapRef = useRef(new Map<string, FileChange>());
+  const pendingUpdateRef = useRef(false);
+
+  // Stream changes from the API
+  useEffect(() => {
+    const changeMap = changeMapRef.current;
+    changeMap.clear();
+
+    // Batch UI updates every 150ms
+    let updateTimer: ReturnType<typeof setTimeout> | null = null;
+
+    const flushUpdates = () => {
+      const allChanges = Array.from(changeMap.values());
+      setChanges(allChanges);
+      setSummary({
+        added: allChanges.filter(c => c.type === "mkdir" || c.type === "link" || c.type === "symlink").length,
+        modified: allChanges.filter(c => c.type === "write" || c.type === "truncate").length,
+        deleted: allChanges.filter(c => c.type === "unlink" || c.type === "rmdir").length,
+        renamed: allChanges.filter(c => c.type === "rename").length,
+      });
+      pendingUpdateRef.current = false;
+    };
+
+    const scheduleUpdate = () => {
+      if (!pendingUpdateRef.current) {
+        pendingUpdateRef.current = true;
+        updateTimer = setTimeout(flushUpdates, 150);
+      }
+    };
+
+    const eventSource = new EventSource(
+      `/api/stream-changes?old=${encodeURIComponent(oldSnapshotPath)}&new=${encodeURIComponent(newSnapshotPath)}`
+    );
+
+    eventSource.onmessage = (event) => {
+      try {
+        const data = JSON.parse(event.data);
+
+        if (data.type === "change" && data.data) {
+          const change = data.data as FileChange;
+          const key = `${change.type}:${change.path}`;
+          const existing = changeMap.get(key);
+
+          if (existing && change.size) {
+            existing.size = (existing.size || 0) + change.size;
+          } else if (!existing) {
+            changeMap.set(key, change);
+          }
+
+          // Schedule batched update
+          scheduleUpdate();
+        } else if (data.type === "progress") {
+          setProgress(data.message || "");
+        } else if (data.type === "done") {
+          // Final flush
+          if (updateTimer) clearTimeout(updateTimer);
+          flushUpdates();
+          setIsStreaming(false);
+          setProgress("");
+          if (data.summary) {
+            setSummary(data.summary);
+          }
+          eventSource.close();
+        } else if (data.type === "error") {
+          setError(data.message || "Unknown error");
+          setIsStreaming(false);
+          eventSource.close();
+        }
+      } catch (e) {
+        console.error("Failed to parse SSE event:", e);
+      }
+    };
+
+    eventSource.onerror = () => {
+      setError("Connection lost");
+      setIsStreaming(false);
+      eventSource.close();
+    };
+
+    return () => {
+      if (updateTimer) clearTimeout(updateTimer);
+      eventSource.close();
+    };
+  }, [oldSnapshotPath, newSnapshotPath]);
+
   const btrfsSendCommand = buildBtrfsSendCommand(btrfsDisplayPath, oldSnapshotPath, newSnapshotPath);
 
   const getSnapshotName = (path: string) => {
     const parts = path.split("/");
     return parts[parts.length - 1];
-  };
-
-  const formatDate = (date: Date) => {
-    return new Date(date).toLocaleDateString(undefined, {
-      year: "numeric",
-      month: "short",
-      day: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-    });
   };
 
   return (
@@ -138,13 +249,21 @@ export default function Compare({ loaderData }: Route.ComponentProps) {
                 />
               </svg>
             </button>
-            <div>
+            <div className="flex-1">
               <h1 className="text-xl font-bold text-gray-900 dark:text-white">
                 Compare Snapshots
               </h1>
-              <p className="text-sm text-gray-500 dark:text-gray-400">
-                {changes.length} change{changes.length !== 1 ? "s" : ""} detected
-              </p>
+              <div className="flex items-center gap-2">
+                <p className="text-sm text-gray-500 dark:text-gray-400">
+                  {changes.length} change{changes.length !== 1 ? "s" : ""} detected
+                </p>
+                {isStreaming && (
+                  <div className="flex items-center gap-1 text-sm text-blue-500">
+                    <LoadingSpinner className="w-4 h-4" />
+                    <span>Streaming...</span>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         </div>
@@ -161,11 +280,8 @@ export default function Compare({ loaderData }: Route.ComponentProps) {
               </span>
             </div>
             <h3 className="font-medium text-gray-900 dark:text-white truncate">
-              {getSnapshotName(oldSnapshot.path)}
+              {getSnapshotName(oldSnapshotPath)}
             </h3>
-            <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-              {formatDate(oldSnapshot.createdAt)}
-            </p>
           </div>
 
           <div className="p-4 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-200 dark:border-green-800">
@@ -176,13 +292,27 @@ export default function Compare({ loaderData }: Route.ComponentProps) {
               </span>
             </div>
             <h3 className="font-medium text-gray-900 dark:text-white truncate">
-              {getSnapshotName(newSnapshot.path)}
+              {getSnapshotName(newSnapshotPath)}
             </h3>
-            <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-              {formatDate(newSnapshot.createdAt)}
-            </p>
           </div>
         </div>
+
+        {/* Progress indicator */}
+        {isStreaming && progress && (
+          <div className="mb-4 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
+            <div className="flex items-center gap-2 text-sm text-blue-700 dark:text-blue-300">
+              <LoadingSpinner className="w-4 h-4" />
+              <span>{progress}</span>
+            </div>
+          </div>
+        )}
+
+        {/* Error message */}
+        {error && (
+          <div className="mb-4 p-3 bg-red-50 dark:bg-red-900/20 rounded-lg border border-red-200 dark:border-red-800">
+            <p className="text-sm text-red-700 dark:text-red-300">{error}</p>
+          </div>
+        )}
 
         {/* Summary stats */}
         <div className="grid grid-cols-4 gap-3 mb-6">
@@ -232,7 +362,7 @@ export default function Compare({ loaderData }: Route.ComponentProps) {
         </details>
 
         {/* Changes list */}
-        {changes.length === 0 ? (
+        {!isStreaming && changes.length === 0 && !error ? (
           <div className="text-center py-12">
             <p className="text-gray-500 dark:text-gray-400">
               No changes detected between these snapshots.
