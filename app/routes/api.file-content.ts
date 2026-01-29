@@ -1,5 +1,4 @@
 import type { Route } from './+types/api.file-content';
-import { json } from 'react-router';
 import { getFileContent } from '~/services/file-listing.server';
 
 /**
@@ -18,7 +17,7 @@ export async function loader({ request }: Route.LoaderArgs) {
 
   try {
     const content = await getFileContent(snapshot, file);
-    return json({
+    return ({
       snapshot,
       file,
       ...content

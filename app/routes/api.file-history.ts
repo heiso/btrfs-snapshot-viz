@@ -1,5 +1,4 @@
 import type { Route } from './+types/api.file-history';
-import { json } from 'react-router';
 import {
   getFileHistory,
   getIndexMetadata,
@@ -36,7 +35,7 @@ export async function loader({ request }: Route.LoaderArgs) {
 
     // If index is incomplete and streaming is not requested, return status
     if (needsBuild || metadata?.status !== 'complete') {
-      return json({
+      return ({
         indexStatus: {
           exists: !!metadata,
           complete: false,
@@ -57,7 +56,7 @@ export async function loader({ request }: Route.LoaderArgs) {
       throw new Response('File not found in history', { status: 404 });
     }
 
-    return json({
+    return ({
       indexStatus: {
         exists: true,
         complete: true,

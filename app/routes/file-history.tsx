@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router';
 import type { Route } from './+types/file-history';
-import { json } from 'react-router';
 import {
   getFileHistory,
   getIndexStatus,
@@ -28,7 +27,7 @@ export async function loader({ request }: Route.LoaderArgs) {
 
     // If index is incomplete, return status only
     if (needsBuild || !indexStatus.complete) {
-      return json({
+      return ({
         subvolume,
         file,
         indexStatus,
@@ -44,7 +43,7 @@ export async function loader({ request }: Route.LoaderArgs) {
       throw new Response('File not found in history', { status: 404 });
     }
 
-    return json({
+    return ({
       subvolume,
       file,
       indexStatus,

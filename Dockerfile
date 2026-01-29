@@ -1,5 +1,5 @@
 # Build stage - install all dependencies and build
-FROM node:20-alpine AS builder
+FROM node:24-alpine AS builder
 # Install build tools for native modules (better-sqlite3)
 RUN apk add --no-cache python3 make g++
 COPY . /app
@@ -8,7 +8,7 @@ RUN npm ci
 RUN npm run build
 
 # Production stage - fresh install of runtime dependencies
-FROM node:20-alpine
+FROM node:24-alpine
 # Install runtime dependencies
 RUN apk add --no-cache btrfs-progs python3 make g++
 

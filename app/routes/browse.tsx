@@ -1,6 +1,5 @@
 import type { Route } from './+types/browse';
 import { useLoaderData, useNavigate } from 'react-router';
-import { json } from 'react-router';
 import { getDirectoryContents } from '~/services/file-listing.server';
 import { FileBrowser } from '~/components/FileBrowser';
 import { Breadcrumbs } from '~/components/Breadcrumbs';
@@ -22,7 +21,7 @@ export async function loader({ params, request }: Route.LoaderArgs) {
   try {
     const files = await getDirectoryContents(snapshotPath, dirPath);
 
-    return json({
+    return ({
       snapshot: snapshotPath,
       directory: dirPath,
       files

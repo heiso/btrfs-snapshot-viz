@@ -123,7 +123,7 @@ export default function Snapshots({ loaderData }: Route.ComponentProps) {
 
   // Build the btrfs send command for copying
   const btrfsSendCommand = canCompare
-    ? buildBtrfsSendCommand(btrfsDisplayPath, selectedSnapshots[0], selectedSnapshots[1])
+    ? buildBtrfsSendCommand(btrfsDisplayPath, selectedSnapshots[0]!, selectedSnapshots[1]!)
     : "";
 
   const handleCopy = async () => {

@@ -1,5 +1,4 @@
 import type { Route } from './+types/api.rebuild-index';
-import { json } from 'react-router';
 import { rebuildIndex, getIndexStatus } from '~/services/file-history.server';
 
 /**
@@ -58,13 +57,16 @@ export async function action({ request }: Route.ActionArgs) {
     });
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Unknown error';
-    return json(
-      {
+    return new Response(
+      JSON.stringify({
         success: false,
         message,
         error: message
-      },
-      { status: 500 }
+      }),
+      {
+        status: 500,
+        headers: { 'Content-Type': 'application/json' }
+      }
     );
   }
 }
@@ -85,7 +87,7 @@ export async function loader({ request }: Route.LoaderArgs) {
   try {
     const status = await getIndexStatus(subvolume);
 
-    return json({
+    return ({
       subvolume,
       ...status
     });

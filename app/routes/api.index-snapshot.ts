@@ -1,5 +1,4 @@
 import type { Route } from './+types/api.index-snapshot';
-import { json } from 'react-router';
 import { indexLatestSnapshot } from '~/services/file-history.server';
 
 /**
@@ -24,7 +23,7 @@ export async function action({ request }: Route.ActionArgs) {
 
     await indexLatestSnapshot(subvolume);
 
-    return json({
+    return ({
       success: true,
       message: 'Latest snapshot indexed successfully',
       subvolume
@@ -33,13 +32,16 @@ export async function action({ request }: Route.ActionArgs) {
     const message = error instanceof Error ? error.message : 'Unknown error';
     console.error('Error indexing latest snapshot:', error);
 
-    return json(
-      {
+    return new Response(
+      JSON.stringify({
         success: false,
         message,
         error: message
-      },
-      { status: 500 }
+      }),
+      {
+        status: 500,
+        headers: { 'Content-Type': 'application/json' }
+      }
     );
   }
 }
@@ -68,7 +70,7 @@ export async function loader({ request }: Route.LoaderArgs) {
     const isLatestIndexed =
       metadata?.last_indexed_snapshot === latestSnapshot?.path;
 
-    return json({
+    return ({
       subvolume,
       latestSnapshot: latestSnapshot?.path,
       lastIndexedSnapshot: metadata?.last_indexed_snapshot,

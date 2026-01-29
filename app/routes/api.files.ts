@@ -1,5 +1,4 @@
 import type { Route } from './+types/api.files';
-import { json } from 'react-router';
 import { getDirectoryContents } from '~/services/file-listing.server';
 
 /**
@@ -21,12 +20,12 @@ export async function loader({ params, request }: Route.LoaderArgs) {
     const decodedSnapshotPath = decodeURIComponent(snapshotPath);
     const files = await getDirectoryContents(decodedSnapshotPath, dirPath, includeSize);
 
-    return json({
+    return {
       snapshot: decodedSnapshotPath,
       directory: dirPath,
       files,
       count: files.length
-    });
+    };
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Unknown error';
 
