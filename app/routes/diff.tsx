@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Link } from "react-router";
 import type { Route } from "./+types/diff";
 import { getFileDiff, getBtrfsDisplayPath } from "~/services/index.server";
 import { DiffViewer } from "~/components/DiffViewer";
@@ -111,6 +112,14 @@ export default function Diff({ loaderData }: Route.ComponentProps) {
   // Build the diff command for copying
   const diffCommand = `diff "${btrfsDisplayPath}${oldSnapshotPath}/${filePath}" "${btrfsDisplayPath}${newSnapshotPath}/${filePath}"`;
 
+  // Get parent directory for browse link
+  const parentDir = filePath.split('/').slice(0, -1).join('/') || '/';
+  const browseUrl = `/browse${newSnapshotPath}${parentDir === '/' ? '/' : parentDir}`;
+
+  // Get subvolume for history link
+  const subvolume = oldSnapshotPath.split('/').slice(0, 2).join('/');
+  const historyUrl = `/file-history?subvolume=${encodeURIComponent(subvolume)}&file=${encodeURIComponent(filePath)}`;
+
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       <header className="bg-white dark:bg-gray-800 shadow sticky top-0 z-10">
@@ -150,7 +159,7 @@ export default function Diff({ loaderData }: Route.ComponentProps) {
       <main className="max-w-6xl mx-auto px-4 py-6">
         {/* File info */}
         <div className="mb-6 p-4 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm mb-4">
             <div>
               <span className="text-gray-500 dark:text-gray-400">
                 Older snapshot:{" "}
@@ -167,6 +176,26 @@ export default function Diff({ loaderData }: Route.ComponentProps) {
                 {getSnapshotName(newSnapshotPath)}
               </span>
             </div>
+          </div>
+
+          {/* Action Links */}
+          <div className="flex gap-3 pt-3 border-t border-gray-200 dark:border-gray-700">
+            <Link
+              to={browseUrl}
+              className="inline-flex items-center gap-1.5 text-sm text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 hover:underline"
+            >
+              <span>📁</span>
+              <span>Browse Folder</span>
+            </Link>
+            <Link
+              to={historyUrl}
+              className="inline-flex items-center gap-1.5 text-sm text-purple-600 dark:text-purple-400 hover:text-purple-700 dark:hover:text-purple-300 hover:underline"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <span>View History</span>
+            </Link>
           </div>
         </div>
 

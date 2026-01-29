@@ -211,6 +211,12 @@ function TreeNodeComponent({
       ? `/diff?old=${encodeURIComponent(oldSnapshotPath)}&new=${encodeURIComponent(newSnapshotPath)}&file=${encodeURIComponent(node.change.path)}`
       : null;
 
+  // Extract subvolume from snapshot path (e.g., "/@snapshots/2026-01-29_00:00:01" -> "/@snapshots")
+  const subvolume = oldSnapshotPath.split('/').slice(0, 2).join('/');
+  const historyUrl = !node.isFolder && node.change
+    ? `/file-history?subvolume=${encodeURIComponent(subvolume)}&file=${encodeURIComponent(node.change.path)}`
+    : null;
+
   return (
     <div>
       <div
@@ -313,6 +319,29 @@ function TreeNodeComponent({
                 strokeLinejoin="round"
                 strokeWidth={2}
                 d="M9 5l7 7-7 7"
+              />
+            </svg>
+          </Link>
+        )}
+
+        {/* File history button */}
+        {historyUrl && (
+          <Link
+            to={historyUrl}
+            className="shrink-0 text-gray-400 hover:text-purple-500"
+            title="View file history"
+          >
+            <svg
+              className="w-4 h-4"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
               />
             </svg>
           </Link>
