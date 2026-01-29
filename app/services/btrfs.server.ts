@@ -13,6 +13,14 @@ const execAsync = promisify(exec);
 // Configuration - can be overridden via environment
 const BTRFS_ROOT = process.env.BTRFS_ROOT || "/";
 
+/**
+ * Safely escape a string for use in shell commands
+ * Wraps string in single quotes and escapes any single quotes
+ */
+function shellEscape(str: string): string {
+  return `'${str.replace(/'/g, "'\\''")}'`;
+}
+
 // In-memory cache for comparison results
 const comparisonCache = new Map<string, { data: SnapshotComparison; timestamp: number }>();
 const CACHE_TTL = 1000 * 60 * 60; // 1 hour TTL
@@ -57,7 +65,7 @@ async function runBtrfs(args: string): Promise<string> {
  * List all subvolumes on the filesystem
  */
 export async function getSubvolumes(): Promise<Subvolume[]> {
-  const output = await runBtrfs(`subvolume list -t ${BTRFS_ROOT}`);
+  const output = await runBtrfs(`subvolume list -t ${shellEscape(BTRFS_ROOT)}`);
   const lines = output.trim().split("\n");
 
   // Skip header lines
@@ -99,7 +107,7 @@ async function getSubvolumeInfo(path: string): Promise<{
   createdAt: Date;
 }> {
   try {
-    const output = await runBtrfs(`subvolume show ${BTRFS_ROOT}/${path}`);
+    const output = await runBtrfs(`subvolume show ${shellEscape(`${BTRFS_ROOT}/${path}`)}`);
     const lines = output.split("\n");
 
     let uuid = "";
@@ -234,7 +242,7 @@ async function getIncrementalChanges(
     // We need file data to get write operations that show actual file changes
     // Filter out noisy changes (timestamps, permissions) at shell level to reduce output size
     const { stdout } = await execAsync(
-      `btrfs send -p "${fullOldPath}" "${fullNewPath}" 2>/dev/null | btrfs receive --dump 2>/dev/null | grep -vE "^(utimes|chmod|chown|update_extent) "`,
+      `btrfs send -p ${shellEscape(fullOldPath)} ${shellEscape(fullNewPath)} 2>/dev/null | btrfs receive --dump 2>/dev/null | grep -vE "^(utimes|chmod|chown|update_extent) "`,
       { maxBuffer: 200 * 1024 * 1024 }
     );
 

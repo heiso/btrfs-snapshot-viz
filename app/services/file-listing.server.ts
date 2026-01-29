@@ -1,10 +1,10 @@
 import fs from 'fs/promises';
 import path from 'path';
-import { exec } from 'child_process';
+import { execFile } from 'child_process';
 import { promisify } from 'util';
 import type { DirectoryEntry, FileContent } from '~/types';
 
-const execAsync = promisify(exec);
+const execFileAsync = promisify(execFile);
 
 // Get BTRFS_ROOT from environment or use default
 const BTRFS_ROOT = process.env.BTRFS_ROOT || '/mnt/btrfs';
@@ -58,10 +58,11 @@ function setInCache<T>(cache: Map<string, CacheEntry<T>>, key: string, value: T)
 /**
  * Calculate directory size using du -sb command
  * Returns size in bytes
+ * Uses execFile for safe argument passing (no shell injection)
  */
 async function calculateDirectorySize(fullPath: string): Promise<number> {
   try {
-    const { stdout } = await execAsync(`du -sb "${fullPath}"`);
+    const { stdout } = await execFileAsync('du', ['-sb', fullPath]);
     const match = stdout.match(/^(\d+)/);
     return match ? parseInt(match[1], 10) : 0;
   } catch (error) {

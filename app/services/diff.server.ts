@@ -1,9 +1,9 @@
 import { readFile, stat } from "fs/promises";
-import { exec } from "child_process";
+import { execFile } from "child_process";
 import { promisify } from "util";
 import type { FileDiff } from "~/types";
 
-const execAsync = promisify(exec);
+const execFileAsync = promisify(execFile);
 
 const BTRFS_ROOT = process.env.BTRFS_ROOT || "/";
 const MAX_FILE_SIZE = 1024 * 1024; // 1MB
@@ -56,6 +56,7 @@ async function readFileContent(filePath: string): Promise<string | null> {
 
 /**
  * Generate unified diff between two files using system diff command
+ * Uses execFile for safe argument passing (no shell injection)
  */
 async function generateUnifiedDiff(
   oldPath: string,
@@ -63,12 +64,19 @@ async function generateUnifiedDiff(
   label: string
 ): Promise<string> {
   try {
-    const { stdout } = await execAsync(
-      `diff -u --label "a${label}" --label "b${label}" "${oldPath}" "${newPath}" 2>/dev/null || true`
-    );
+    const { stdout } = await execFileAsync('diff', [
+      '-u',
+      '--label', `a${label}`,
+      '--label', `b${label}`,
+      oldPath,
+      newPath
+    ]);
     return stdout;
-  } catch {
-    // diff returns exit code 1 when files differ, which throws
+  } catch (error: any) {
+    // diff returns exit code 1 when files differ (expected behavior)
+    if (error.code === 1 && error.stdout) {
+      return error.stdout;
+    }
     return "";
   }
 }
