@@ -6,6 +6,7 @@ export default [
   route("compare/:oldSnapshot/:newSnapshot", "routes/compare.tsx"),
   route("diff", "routes/diff.tsx"),
   route("browse/:snapshot/*", "routes/browse.tsx"),
+  route("file-history", "routes/file-history.tsx"),
   route("api/stream-changes", "routes/api.stream-changes.ts"),
   route("api/files/:snapshotPath", "routes/api.files.ts"),
   route("api/file-history", "routes/api.file-history.ts"),
