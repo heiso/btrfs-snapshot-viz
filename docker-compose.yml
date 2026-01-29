@@ -20,6 +20,7 @@ services:
   # Example for production with real btrfs filesystem
   # btrfs-viz-production:
   #   build: .
+  #   privileged: true  # Required for btrfs commands
   #   ports:
   #     - "3000:3000"
   #   environment:

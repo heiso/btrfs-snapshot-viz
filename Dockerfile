@@ -22,15 +22,12 @@ RUN npm ci --omit=dev
 COPY --from=builder /app/build /app/build
 
 # Create data directory for SQLite database
-RUN mkdir -p /app/data && chown -R node:node /app/data
+RUN mkdir -p /app/data
 
 # Default to demo mode for safety (real mode requires mounting btrfs filesystem)
 ENV DEMO=true
 ENV NODE_ENV=production
 ENV FILE_HISTORY_DB=/app/data/file-history.db
-
-# Use non-root user for security
-USER node
 
 # Volume for persistent SQLite database
 VOLUME ["/app/data"]
