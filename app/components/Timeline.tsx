@@ -1,3 +1,4 @@
+import { Link } from "react-router";
 import type { Snapshot } from "~/types";
 
 interface TimelineProps {
@@ -105,6 +106,18 @@ export function Timeline({
                       {selectionState === "first" ? "Older" : "Newer"}
                     </span>
                   )}
+                </div>
+
+                {/* Browse Files Link */}
+                <div className="mt-2 pt-2 border-t border-gray-200 dark:border-gray-700">
+                  <Link
+                    to={`/browse${snapshot.path}/`}
+                    onClick={(e) => e.stopPropagation()}
+                    className="inline-flex items-center gap-1.5 text-sm text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 hover:underline"
+                  >
+                    <span>📁</span>
+                    <span>Browse Files</span>
+                  </Link>
                 </div>
               </div>
 

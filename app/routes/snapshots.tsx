@@ -2,7 +2,9 @@ import { useState } from "react";
 import { Link, useNavigate, useNavigation } from "react-router";
 import type { Route } from "./+types/snapshots";
 import { getSnapshots, getBtrfsDisplayPath } from "~/services/index.server";
+import { getIndexStatus } from "~/services/file-history.server";
 import { Timeline } from "~/components/Timeline";
+import { IndexStatusBanner } from "~/components/IndexStatusBanner";
 import { buildBtrfsSendCommand } from "~/utils/btrfs";
 
 // Loading spinner component
@@ -43,7 +45,8 @@ export async function loader({ params }: Route.LoaderArgs) {
   const subvolumePath = decodeURIComponent(params.subvolume);
   const snapshots = await getSnapshots(subvolumePath);
   const btrfsDisplayPath = getBtrfsDisplayPath();
-  return { subvolumePath, snapshots, btrfsDisplayPath };
+  const indexStatus = await getIndexStatus(subvolumePath);
+  return { subvolumePath, snapshots, btrfsDisplayPath, indexStatus };
 }
 
 // Copy icon
@@ -65,7 +68,7 @@ function CheckIcon({ className }: { className?: string }) {
 }
 
 export default function Snapshots({ loaderData }: Route.ComponentProps) {
-  const { subvolumePath, snapshots, btrfsDisplayPath } = loaderData;
+  const { subvolumePath, snapshots, btrfsDisplayPath, indexStatus } = loaderData;
   const navigate = useNavigate();
   const navigation = useNavigation();
 
@@ -189,6 +192,13 @@ export default function Snapshots({ loaderData }: Route.ComponentProps) {
       </header>
 
       <main className="max-w-4xl mx-auto px-4 py-6">
+        {/* Index Status Banner */}
+        <IndexStatusBanner
+          status={indexStatus}
+          subvolumePath={subvolumePath}
+          totalSnapshots={snapshots.length}
+        />
+
         {/* Selection help */}
         <div className="mb-6 p-4 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
           <p className="text-sm text-gray-600 dark:text-gray-300">
