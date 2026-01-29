@@ -6,4 +6,9 @@ export default [
   route("compare/:oldSnapshot/:newSnapshot", "routes/compare.tsx"),
   route("diff", "routes/diff.tsx"),
   route("api/stream-changes", "routes/api.stream-changes.ts"),
+  route("api/files/:snapshotPath", "routes/api.files.ts"),
+  route("api/file-history", "routes/api.file-history.ts"),
+  route("api/file-content", "routes/api.file-content.ts"),
+  route("api/index-snapshot", "routes/api.index-snapshot.ts"),
+  route("api/rebuild-index", "routes/api.rebuild-index.ts"),
 ] satisfies RouteConfig;
