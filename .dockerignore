@@ -10,3 +10,7 @@ build
 Dockerfile
 .dockerignore
 .claude
+data/
+*.db
+*.db-shm
+*.db-wal

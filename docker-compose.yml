@@ -1,0 +1,33 @@
+version: '3.8'
+
+services:
+  btrfs-viz:
+    build: .
+    ports:
+      - "3000:3000"
+    environment:
+      # Run in demo mode by default (uses mock data)
+      - DEMO=true
+      - NODE_ENV=production
+      - FILE_HISTORY_DB=/app/data/file-history.db
+    volumes:
+      # Persist SQLite database
+      - ./data:/app/data
+      # Uncomment to mount real btrfs filesystem (requires DEMO=false)
+      # - /mnt/btrfs:/mnt/btrfs:ro
+    restart: unless-stopped
+
+  # Example for production with real btrfs filesystem
+  # btrfs-viz-production:
+  #   build: .
+  #   ports:
+  #     - "3000:3000"
+  #   environment:
+  #     - DEMO=false
+  #     - NODE_ENV=production
+  #     - BTRFS_ROOT=/mnt/btrfs
+  #     - FILE_HISTORY_DB=/app/data/file-history.db
+  #   volumes:
+  #     - ./data:/app/data
+  #     - /mnt/btrfs:/mnt/btrfs:ro
+  #   restart: unless-stopped
