@@ -1,0 +1,35 @@
+services:
+  # Production mode - requires real btrfs snapshots
+  btrfs-snapshot-viz:
+    build: .
+    ports:
+      - "3000:3000"
+    volumes:
+      # Mount your snapshots directory (rslave for btrfs subvolume visibility)
+      - /path/to/your/snapshots:/mnt/snapshots:ro,rslave
+      # Persist SQLite database
+      - ./data:/app/data
+    environment:
+      - NODE_ENV=production
+      - DB_PATH=/app/data/snapshots.db
+      - SNAPSHOTS_ROOT=/mnt/snapshots
+    # Required for btrfs commands to work
+    privileged: true
+    restart: unless-stopped
+
+  # Mock mode - uses fixture data, no real btrfs required
+  btrfs-snapshot-viz-mock:
+    build: .
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./data:/app/data
+      - ./fixtures:/app/fixtures:ro
+    environment:
+      - NODE_ENV=production
+      - DB_PATH=/app/data/snapshots.db
+      - MOCK_BTRFS=true
+      - FIXTURES_DIR=/app/fixtures
+    restart: unless-stopped
+    profiles:
+      - mock

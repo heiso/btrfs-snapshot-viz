@@ -1,0 +1,7 @@
+# Copy this to subvolume-list.txt and replace with your actual output of:
+# btrfs subvolume list -s -o /path/to/snapshots
+#
+# Example format:
+ID 100 gen 1000 cgen 999 top level 5 otime 2025-01-15 00:00:01 path @snapshots/2025-01-15_00:00:01
+ID 99 gen 900 cgen 899 top level 5 otime 2025-01-14 00:00:01 path @snapshots/2025-01-14_00:00:01
+ID 98 gen 800 cgen 799 top level 5 otime 2025-01-13 00:00:01 path @snapshots/2025-01-13_00:00:01

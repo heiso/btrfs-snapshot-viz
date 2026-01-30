@@ -1,0 +1,15 @@
+{
+  "_comment": "Copy this to file-tree.json and populate with your directory structure",
+  "_format": "Keys are relative paths from SNAPSHOTS_ROOT, values are arrays of entries",
+  "": [
+    { "name": "2025-01-15_00:00:01", "isDirectory": true, "size": 0, "mtime": "2025-01-15T00:00:01Z" }
+  ],
+  "2025-01-15_00:00:01": [
+    { "name": "data", "isDirectory": true, "size": 0, "mtime": "2025-01-15T00:00:01Z" }
+  ],
+  "2025-01-15_00:00:01/data": [
+    { "name": "folder1", "isDirectory": true, "size": 0, "mtime": "2025-01-15T00:00:01Z" },
+    { "name": "folder2", "isDirectory": true, "size": 0, "mtime": "2025-01-15T00:00:01Z" },
+    { "name": "file.txt", "isDirectory": false, "size": 1234, "mtime": "2025-01-15T00:00:01Z" }
+  ]
+}

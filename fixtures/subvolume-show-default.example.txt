@@ -1,0 +1,19 @@
+# Copy this to subvolume-show-default.txt and replace with your actual output of:
+# btrfs subvolume show /path/to/snapshot
+#
+# You can also create specific files in subvolume-show/ folder
+# named after the snapshot (e.g., subvolume-show/2025-01-15_00:00:01.txt)
+#
+# Example format:
+/mnt/snapshots/2025-01-15_00:00:01
+	Name:			2025-01-15_00:00:01
+	UUID:			aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee
+	Parent UUID:		ffffffff-0000-1111-2222-333333333333
+	Received UUID:		-
+	Creation time:		2025-01-15 00:00:01 +0100
+	Subvolume ID:		100
+	Generation:		1000
+	Gen at creation:	999
+	Parent ID:		5
+	Top level ID:		5
+	Flags:			readonly

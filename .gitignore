@@ -1,0 +1,18 @@
+.DS_Store
+.env
+/node_modules/
+
+# React Router
+/.react-router/
+/build/
+
+# Database
+/data/*.db
+/data/*.db-*
+
+# Mockup
+mockup.html
+
+# Fixtures (keep .example files)
+/fixtures/*
+!/fixtures/*.example.*
