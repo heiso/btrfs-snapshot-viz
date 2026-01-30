@@ -2,7 +2,6 @@ name: Docker Build
 
 on:
   push:
-    branches: [main]
   workflow_dispatch:
 
 jobs:
@@ -22,4 +21,4 @@ jobs:
         with:
           context: .
           push: true
-          tags: heiso/btrfs-snapshot-viz:latest
+          tags: heiso/btrfs-snapshot-viz:${{ github.ref_name }}
